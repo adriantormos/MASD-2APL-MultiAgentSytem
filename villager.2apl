@@ -1,0 +1,47 @@
+include: consumer.2apl;
+
+beliefs:
+  foodUnits(0).
+  money(100).
+
+pgrules:
+	consume(N) <- not tryingToBuy and not canConsume(N) and not hasConsumed | {
+		print("I will try to buy, should ask the shopkeeper");
+		B( foodUnits(CurrentAmount) );
+	    send( shopkeeper, inform, stockRequest(N-CurrentAmount) );
+	    +tryingToBuy;
+	}
+	
+pcrules:
+	message( shopkeeper, inform, La, On, consuming() ) <- true |
+  	{   		
+  		print("Shopkeeper is busy, I can't buy now");
+    	-tryingToBuy;
+  	}
+  	
+	message( shopkeeper, inform, La, On, price(P) ) <- (money(M) and foodUnits(CurrentAm)) |
+  	{   
+    	if G( consume(A) )
+    	{
+    		if (A * P - CurrentAm * P <= M)
+    		{
+    		  	print("Given the price, I can buy");
+    			+price(P);
+    			@env(buy(A - CurrentAm),_);
+    		}
+    		else
+    		{
+    			print("I cannot afford the food I need");
+    		}
+    	}
+  	}
+  	
+	event(sold(N), env) <- (foodUnits(0) and price(P) and money(M)) | {
+    	-tryingToBuy;
+		print("I obtained food");
+		B( foodUnits(CurrentAmount) );
+		UpdateFoodUnits(CurrentAmount, N);
+		B( money(CurrentMoney) );
+		UpdateMoney(CurrentMoney, CurrentMoney - P*N);
+    	-price(P);
+	}

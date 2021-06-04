@@ -1,0 +1,74 @@
+include: consumer.2apl;
+
+beliefs:
+  foodUnits(0).
+  price(10).
+  money(0).
+    
+pgrules:
+    consume(X) <- foodUnits(0) | {
+        @env(checkStock(),_);
+    }
+    
+    askStock(X) <- true | {
+    	send( farmer, request, askForStock( X ) );
+    }
+	
+pcrules:
+    event(stockAvailable(N), env) <- foodUnits(0) | {
+    	UpdateFoodUnits(0, N);
+    }
+    
+	message( villager, inform, La, On, stockRequest(A) ) <- price(X) and foodUnits(Y) |
+  	{   
+    	if G( consume(10) )
+    	{
+    		print("I cannot attend the buyer now, I'm trying to consume my food");
+    		send( villager, inform, consuming() );
+    	}
+    	else
+    	{
+    		print("I need to check the stock to tell the buyer");
+    		+someoneAskedForFood;
+    		@env(checkStock(),_);
+    	}
+  	}
+
+	event(stockAvailable(N), env) <- price(X) and someoneAskedForFood | {
+		print("Having checked the stock, I can inform the buyer");
+		-foodUnits(_);
+		+foodUnits(N);
+		send( villager, inform, price(X));
+		-someoneAskedForFood;
+	}
+
+	event(bought(N), env) <- (price(P) and money(M)) | {
+		if B( foodUnits(F) )
+    	{
+    		if (N<=F)
+    		{
+    			print("I can sell the buyer the food he needs");
+    			@env(sell(N),_);
+    			B( money(M) );
+    			UpdateMoney(M, P*N);
+    		}
+    		else
+    		{
+    			print("I can only sell the buyer some of the food he needs");
+    			@env(sell(N),_);
+    			B( money(M) );
+    			UpdateMoney(M, P*F);
+    			adopta(askStock(F-N));
+    		}
+    	}
+	}
+  	
+  	message( farmer, failure, L, O, askForStock( AmountAsked ) )  <- true | {
+  		dropgoal(askStock(_));
+  	}
+
+	event(receivedFood(F), env) <- true | {
+    	B( foodUnits(Current) );
+    	UpdateFoodUnits(Current, F);
+    	dropgoal(askStock(_));
+	}

@@ -1,0 +1,22 @@
+beliefupdates:
+	{foodUnits(CurrentAmount)}  UpdateFoodUnits(CurrentAmount, Diff)  {not foodUnits(CurrentAmount), foodUnits(CurrentAmount+Diff)}
+	{money(CurrentAmount)}  UpdateMoney(CurrentAmount, Diff)  {not money(CurrentAmount), money(CurrentAmount+Diff)}
+
+beliefs:
+	canConsume(Amount) :- foodUnits(X), X >= Amount.
+
+pgrules:
+  	consume(Amount) <- canConsume(Amount)| {
+	    print("I have enough food for the day");
+	    @env( consume(Amount), _ );
+		+hasConsumed;
+		B( foodUnits(CurrentAmount) );
+		UpdateFoodUnits(CurrentAmount, 0-Amount);
+	    dropgoal(consume(Amount));
+  	}
+  
+pcrules:
+	event(dayHasStarted(N), env) <- true | {
+		print("I need to consume");
+    	adoptz( consume(10) );
+	}

@@ -1,0 +1,52 @@
+include: consumer.2apl;
+
+beliefupdates:
+	{true}  FoodWasHarvested()  {not foodToHarvest}
+
+beliefs:
+	foodUnits(0).
+
+pgrules:  
+	harvestFood <- foodToHarvest | {
+		print("Food has grown, I need to harvest it");
+		@env( harvestFood( ), CollectedAmount );
+		B( foodUnits(CurrentAmount) );
+		UpdateFoodUnits(CurrentAmount, CollectedAmount);
+		FoodWasHarvested();
+		dropgoal(harvestFood);
+	}
+		
+	
+pcrules:
+	event(foodHasGrown(), env) <- true | {
+		+foodToHarvest;
+		adopta(harvestFood);
+	}
+	
+	message( Agent, request, L, O, askForStock( AmountAsked ) )  <- foodUnits(0) | {
+		send( shopkeeper, failure, askForStock( AmountAsked ) );
+	}
+	
+	message( Agent, request, L, O, askForStock( AmountAsked ) )  <- not hasConsumed and foodUnits(1) | {
+		send( shopkeeper, failure, askForStock( AmountAsked ) );
+	}
+	
+	message( Agent, request, L, O, askForStock( AmountAsked ) )  <- hasConsumed and foodUnits(AmountFarmerHas) and AmountFarmerHas >= 0 | {
+		send( shopkeeper, agree, askForStock( AmountAsked ) );
+		if (AmountFarmerHas >= AmountAsked) then {
+			@env( giveFood( shopkeeper, AmountAsked ), _ );
+		} else {
+			@env( giveFood( shopkeeper, AmountFarmerHas ), _ );
+ 		}
+	}
+	
+	message( Agent, request, L, O, askForStock( AmountAsked ) )  <- not hasConsumed and foodUnits(AmountFarmerHas) and AmountFarmerHas > 1 | {
+		send( shopkeeper, agree, askForStock( AmountAsked ) );
+		if (AmountFarmerHas > AmountAsked) then {
+			@env( giveFood( shopkeeper, AmountAsked ), _ );
+		} else {
+			@env( giveFood( shopkeeper, AmountFarmerHas-1 ), _ );
+ 		}
+	}
+	
+	

@@ -1,0 +1,6 @@
+<apaplmas>
+	<environment name="env" file="env.jar"/>
+	<agent name="farmer" file="farmer.2apl"/>
+	<agent name="shopkeeper" file="shopkeeper.2apl"/>
+	<agent name="villager" file="villager.2apl"/>
+</apaplmas>
